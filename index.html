@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Clicker Game</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            margin: 0;
+            padding: 20px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: white;
+            text-align: center;
+        }
+        
+        .game-container {
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            max-width: 600px;
+            width: 90%;
+        }
+        
+        h1 {
+            margin-top: 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .score-board {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+        
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .tile {
+            aspect-ratio: 1;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .tile:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+        
+        .controls {
+            margin-top: 20px;
+        }
+        
+        button {
+            background: linear-gradient(to right, #ff416c, #ff4b2b);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+        
+        .combo {
+            position: absolute;
+            font-size: 2em;
+            font-weight: bold;
+            animation: fadeOut 1s forwards;
+            pointer-events: none;
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-50px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Color Clicker</h1>
+        <div class="score-board">
+            <div>Score: <span id="score">0</span></div>
+            <div>Combo: <span id="combo">1x</span></div>
+            <div>High Score: <span id="high-score">0</span></div>
+        </div>
+        <div class="game-board" id="game-board"></div>
+        <div class="controls">
+            <button id="reset-btn">Reset Game</button>
+        </div>
+    </div>
+
+    <script>
+        // Game variables
+        let score = 0;
+        let combo = 1;
+        let lastColorIndex = -1;
+        let highScore = localStorage.getItem('highScore') || 0;
+        
+        // DOM elements
+        const gameBoard = document.getElementById('game-board');
+        const scoreDisplay = document.getElementById('score');
+        const comboDisplay = document.getElementById('combo');
+        const highScoreDisplay = document.getElementById('high-score');
+        const resetBtn = document.getElementById('reset-btn');
+        
+        // Colors for the tiles
+        const colors = [
+            '#FF5733', '#33FF57', '#3357FF', '#F3FF33',
+            '#FF33F3', '#33FFF3', '#FF8C33', '#8C33FF'
+        ];
+        
+        // Initialize the game
+        function initGame() {
+            score = 0;
+            combo = 1;
+            updateDisplays();
+            createTiles();
+        }
+        
+        // Create the tiles on the game board
+        function createTiles() {
+            gameBoard.innerHTML = '';
+            
+            // Create 16 tiles (4x4 grid)
+            for (let i = 0; i < 16; i++) {
+                const tile = document.createElement('div');
+                tile.className = 'tile';
+                
+                // Assign a random color
+                const colorIndex = Math.floor(Math.random() * colors.length);
+                tile.style.backgroundColor = colors[colorIndex];
+                
+                // Store the color index as a data attribute
+                tile.dataset.colorIndex = colorIndex;
+                
+                tile.addEventListener('click', handleTileClick);
+                gameBoard.appendChild(tile);
+            }
+        }
+        
+        // Handle tile clicks
+        function handleTileClick(e) {
+            const clickedColorIndex = parseInt(e.target.dataset.colorIndex);
+            
+            // If same color as last click, increase combo
+            if (clickedColorIndex === lastColorIndex) {
+                combo++;
+                showComboText(e.target);
+            } else {
+                combo = 1;
+            }
+            
+            // Update score
+            score += combo;
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('highScore', highScore);
+            }
+            
+            // Remember last color
+            lastColorIndex = clickedColorIndex;
+            
+            // Update displays and create new tiles
+            updateDisplays();
+            createTiles();
+        }
+        
+        // Show combo text animation
+        function showComboText(element) {
+            const rect = element.getBoundingClientRect();
+            const comboText = document.createElement('div');
+            comboText.className = 'combo';
+            comboText.textContent = `${combo}x COMBO!`;
+            comboText.style.left = `${rect.left + rect.width/2 - 50}px`;
+            comboText.style.top = `${rect.top}px`;
+            document.body.appendChild(comboText);
+            
+            // Remove after animation
+            setTimeout(() => {
+                comboText.remove();
+            }, 1000);
+        }
+        
+        // Update all displays
+        function updateDisplays() {
+            scoreDisplay.textContent = score;
+            comboDisplay.textContent = `${combo}x`;
+            highScoreDisplay.textContent = highScore;
+        }
+        
+        // Reset button event
+        resetBtn.addEventListener('click', initGame);
+        
+        // Start the game
+        initGame();
+    </script>
+</body>
+  </html>
